@@ -147,7 +147,69 @@ class Curso:
                 print("Curos eliminado con éxito.")
 
 
+class Docente:
+    def __init__(self, nombre, curso):
+        self.nombre = nombre
+        self.curso = curso
 
+    @staticmethod
+    def _conn():
+        conn = sqlite3.connect(DB_NAME)
+        conn.row_factory = sqlite3.Row
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS docentes (
+                id_docente INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL,
+                curso TEXT NOT NULL,
+            );
+        """)
+        conn.commit()
+        return conn
+
+    def guardar(self):
+        with self._conn() as conn:
+            conn.execute(
+                "INSERT INTO docentes (nombre, curso) VALUES (?, ?, )",
+                (self.nombre, self.curso)
+            )
+        print(f"Docente '{self.nombre}' guardado con éxito.")
+
+    @staticmethod
+    def listar():
+        with Docente._conn() as conn:
+            cur = conn.execute("SELECT * FROM docentes")
+            filas = cur.fetchall()
+            if not filas:
+                print("No hay docentes registrados.")
+                return
+            print("\n--- LISTADO DE DOCENTES ---")
+            for f in filas:
+                print(f"ID: {f['id_docente']} | Nombre: {f['nombre']} | Curso: {f['curso']} ")
+
+    @staticmethod
+    def modificar():
+        ide = input("Ingrese ID del Docente a modificar: ")
+        with Curso._conn() as conn:
+            cur = conn.execute("SELECT * FROM docentes WHERE id_docente = ?", (ide,))
+            fila = cur.fetchone()
+            if not fila:
+                print("No se encontró el docente.")
+                return
+            nombre = input(f"Nuevo nombre [{fila['nombre']}]: ") or fila['nombre']
+            curso = input(f"Nuevo curso [{fila['curso']}]: ") or fila['curso']
+            conn.execute("UPDATE cursos SET nombre=?, curso=?,  WHERE id_docente=?",
+                         (nombre, curso, ide))
+        print("Curso actualizado con éxito.")
+
+    @staticmethod
+    def eliminar():
+        ide = input("Ingrese ID del docente a eliminar: ")
+        with Curso._conn() as conn:
+            cur = conn.execute("DELETE FROM docentes WHERE id_docente = ?", (ide,))
+            if cur.rowcount == 0:
+                print("No se encontró el docente.")
+            else:
+                print("docente eliminado con éxito.")
 
 
 
@@ -165,8 +227,12 @@ def menu():
         print("7. Listar Curos")
         print("8. Modificar Cursos")
         print("9. Eliminar Cursos")
-
-        print("10. Salir")
+        print("\n===== DOCENTES =====")
+        print("10. Ingresar docentes")
+        print("11. Listar docentes")
+        print("12. Modificar doccentes")
+        print("13. Eliminar docentes")
+        print("14. Salir")
         opcion = input("Seleccione una opción: ")
 
         if opcion == "1":
@@ -183,7 +249,6 @@ def menu():
             Estudiante.eliminar()
         elif opcion == "5":
             Estudiante.promedio_general()
-
         if opcion == "6":
             nombre = input("Nombre: ")
             horario = input("Horario: ")
@@ -196,8 +261,18 @@ def menu():
             Curso.modificar()
         elif opcion == "9":
             Curso.eliminar()
-
-        elif opcion == "10":
+        if opcion == "10":
+            nombre = input("Nombre: ")
+            curso = input("Curso: ")
+            d = Docente(nombre, curso)
+            d.guardar()
+        elif opcion == "11":
+            Docente.listar()
+        elif opcion == "12":
+            Docente.modificar()
+        elif opcion == "13":
+            Docente.eliminar()
+        elif opcion == "14":
             print("Saliendo del programa...")
             break
         else:
